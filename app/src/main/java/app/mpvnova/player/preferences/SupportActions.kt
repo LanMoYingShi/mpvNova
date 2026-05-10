@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.preference.PreferenceManager
 import app.mpvnova.player.BuildConfig
+import app.mpvnova.player.NativeLibraryVersion
 import app.mpvnova.player.R
 import java.io.File
 import java.text.SimpleDateFormat
@@ -162,19 +163,10 @@ object SupportActions {
             "unknown"
         } else {
             runCatching {
-                val text = String(file.readBytes(), Charsets.ISO_8859_1)
-                val start = text.indexOf(marker)
-                if (start < 0) {
-                    "unknown"
-                } else {
-                    val maxEnd = (start + VERSION_SCAN_MAX_CHARS).coerceAtMost(text.length)
-                    val raw = text.substring(start, maxEnd)
-                    raw.takeWhile { it != '\u0000' && it != '\r' && it != '\n' }.trim()
-                }
+                NativeLibraryVersion.find(file, marker) ?: "unknown"
             }.getOrDefault("unknown")
         }
     }
 
-    private const val VERSION_SCAN_MAX_CHARS = 120
     private const val AMAZON_FEATURE_FIRE_TV = "amazon.hardware.fire_tv"
 }

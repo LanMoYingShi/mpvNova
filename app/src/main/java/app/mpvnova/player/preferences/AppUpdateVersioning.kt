@@ -63,19 +63,27 @@ internal fun ReleaseInfo.displayTitle(): String? {
 internal fun chooseBestApkAsset(assets: List<JSONObject>): JSONObject? {
     val selectedName = chooseBestApkAssetName(
         assets.map { asset -> asset.optString("name") },
-        Build.SUPPORTED_ABIS?.toList().orEmpty()
+        Build.SUPPORTED_ABIS?.toList().orEmpty(),
+        Build.VERSION.SDK_INT
     )
     return assets.firstOrNull { asset -> asset.optString("name") == selectedName }
 }
 
 internal fun chooseBestApkAssetName(
     assetNames: List<String>,
-    supportedAbis: List<String>
+    supportedAbis: List<String>,
+    sdkInt: Int = Build.VERSION.SDK_INT
 ): String? {
     return when {
         assetNames.isEmpty() -> null
         assetNames.size == 1 -> assetNames.first()
         else -> {
+            val api29Universal = assetNames.firstOrNull { name ->
+                val lowercaseName = name.lowercase()
+                sdkInt <= Build.VERSION_CODES.Q &&
+                    lowercaseName.contains("api29") &&
+                    lowercaseName.contains("universal")
+            }
             val exactMatch = supportedAbis.firstNotNullOfOrNull { abi ->
                 assetNames.firstOrNull { name -> name.contains(abi, ignoreCase = true) }
             }
@@ -88,7 +96,7 @@ internal fun chooseBestApkAssetName(
             val abiNeutral = assetNames.firstOrNull { name ->
                 KNOWN_ABIS.none { abi -> name.contains(abi, ignoreCase = true) }
             }
-            exactMatch ?: universal ?: abiNeutral ?: assetNames.first()
+            api29Universal ?: exactMatch ?: universal ?: abiNeutral ?: assetNames.first()
         }
     }
 }
